@@ -10,6 +10,7 @@ class IwebdecodePlugin(StellarPlayer.IStellarPlayerPlugin):
     def __init__(self, player: StellarPlayer.IStellarPlayer):
         super().__init__(player)
         self.playurl = []
+        self.url = ''
 
     def show(self):
         list_layout = [[{'type':'label','name':'video_profile'},{'type':'link','name':'播放','width':60,'@click':'onPlayClick'}]]
@@ -72,6 +73,9 @@ class IwebdecodePlugin(StellarPlayer.IStellarPlayerPlugin):
         self.player.toast('main','开始解析')
     
         url = self.player.getControlValue('main','url_edit')
+        if self.url == url:
+                return
+        self.url = url
         if url:
             m, url = self.get_module(url)  
             try:
@@ -82,7 +86,6 @@ class IwebdecodePlugin(StellarPlayer.IStellarPlayerPlugin):
                 var_exists = True            
             if var_exists :
                 website.url = url
-                website.json_output = True;
                 website.prepare()
                 print(website.name)
                 outjson = json_output.output(website)
@@ -92,6 +95,7 @@ class IwebdecodePlugin(StellarPlayer.IStellarPlayerPlugin):
             if outjson :   
                 streams = outjson.get('streams')
                 sitename = outjson.get('site')
+                print(sitename)
                 if streams:
                     urls = []
                     if sitename in ["爱奇艺 (Iqiyi)", "优酷 (Youku)"]:
@@ -119,7 +123,6 @@ class IwebdecodePlugin(StellarPlayer.IStellarPlayerPlugin):
                                 urls.append({'url':srcdata,'video_profile':profile})
                             
 
-                    #print(urls)
                     self.player.updateControlValue('main','list',urls)
                     self.playurl = urls
                     self.player.toast('main','解析完成')
@@ -129,7 +132,12 @@ class IwebdecodePlugin(StellarPlayer.IStellarPlayerPlugin):
                 self.player.toast('main','没有解析到播放地址2')
             
     def onPlayClick(self, page, control, idx, *arg):
-        self.player.play(self.playurl[idx]['url'])
+        if re.match(r'(.*)bilibili.com',self.url):
+            ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36'
+            self.player.play(self.playurl[idx]['url'],headers={'referer':self.url,'user_agent':ua})
+        else:
+            self.player.play(self.playurl[idx]['url'])
+        
     
 
 def newPlugin(player:StellarPlayer.IStellarPlayer,*arg):
