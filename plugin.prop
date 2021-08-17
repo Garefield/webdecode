@@ -1,4 +1,4 @@
 name = 提取网页视频
 description = 提取网页中的视频地址
 url=https://github.com/Garefield/webdecode
-version=1.0
+version=1.01

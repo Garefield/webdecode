@@ -13,8 +13,7 @@ from urllib import request
 __all__ = ['ixigua_download', 'ixigua_download_playlist_by_url']
 
 headers = {
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 "
-                  "Safari/537.36",
+    "user-agent":"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36"
 }
 
 
@@ -27,7 +26,8 @@ def int_overflow(val):
 
 def unsigned_right_shitf(n, i):
     if n < 0:
-        n = ctypes.c_uint32(n).value
+        n = 4294967296 + n
+        #n = ctypes.c_uint32(n).value
     if i < 0:
         return -int_overflow(n << abs(i))
     return int_overflow(n >> i)
@@ -82,30 +82,20 @@ def get_video_url_from_video_id(video_id):
 
 def ixigua_download(url, output_dir='.', merge=True, info_only=False, **kwargs):
     # example url: https://www.ixigua.com/i6631065141750268420/#mid=63024814422
-    resp = urlopen_with_retry(request.Request(url))
+    if "wid_try=1" not in url:
+        url = url + "&wid_try=1"
+    
+    resp = urlopen_with_retry(request.Request(url,headers=headers))
     html = resp.read().decode('utf-8')
-
     _cookies = []
     for c in resp.getheader('Set-Cookie').split("httponly,"):
         _cookies.append(c.strip().split(' ')[0])
     headers['cookie'] = ' '.join(_cookies)
-
-    conf = loads(match1(html, r"window\.config = (.+);"))
-    if not conf:
-        log.e("Get window.config from url failed, url: {}".format(url))
-        return
-    verify_url = conf['prefix'] + conf['url'] + '?key=' + conf['key'] + '&psm=' + conf['psm'] \
-        + '&_signature=' + ''.join(random.sample(string.ascii_letters + string.digits, 31))
-    try:
-        ok = get_content(verify_url)
-    except Exception as e:
-        ok = e.msg
-    if ok != 'OK':
-        log.e("Verify failed, verify_url: {}, result: {}".format(verify_url, ok))
-        return
+    
     html = get_content(url, headers=headers)
 
     video_id = match1(html, r"\"vid\":\"([^\"]+)")
+    print(video_id)
     title = match1(html, r"\"player__videoTitle\">.*?<h1.*?>(.*)<\/h1><\/div>")
     if not video_id:
         log.e("video_id not found, url:{}".format(url))
@@ -129,7 +119,7 @@ def ixigua_download(url, output_dir='.', merge=True, info_only=False, **kwargs):
         return
     bestQualityVideo = list(video_info["data"]["video_list"].keys())[-1] #There is not only video_1, there might be video_2
     size = int(video_info["data"]["video_list"][bestQualityVideo]["size"])
-    print_info(site_info=site_info, title=title, type="mp4", size=size)  # 该网站只有mp4类型文件
+    #print_info(site_info=site_info, title=title, type="mp4", size=size)  # 该网站只有mp4类型文件
     if not info_only:
         video_url = base64.b64decode(video_info["data"]["video_list"][bestQualityVideo]["main_url"].encode("utf-8"))
         return download_urls([video_url.decode("utf-8")], title, "mp4", size, output_dir, merge=merge, headers=headers, **kwargs)

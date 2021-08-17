@@ -70,7 +70,8 @@ class IwebdecodePlugin(StellarPlayer.IStellarPlayerPlugin):
     def parse_html(self,*args):
         self.player.updateControlValue('main','list',[])
         self.playurl = []
-        self.player.toast('main','开始解析')
+        if hasattr(self.player, 'loadingAnimation'):
+            self.player.loadingAnimation('main')
     
         url = self.player.getControlValue('main','url_edit')
         if self.url == url:
@@ -130,6 +131,8 @@ class IwebdecodePlugin(StellarPlayer.IStellarPlayerPlugin):
                     self.player.toast('main','没有解析到播放地址1')
             else:
                 self.player.toast('main','没有解析到播放地址2')
+        if hasattr(self.player, 'loadingAnimation'):
+            self.player.loadingAnimation('main',stop=True)  
             
     def onPlayClick(self, page, control, idx, *arg):
         if re.match(r'(.*)bilibili.com',self.url):
